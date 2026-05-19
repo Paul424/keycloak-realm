@@ -1,0 +1,103 @@
+{{- $root := . -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "keycloak-realm.fullname" . }}
+  labels:
+    {{- include "keycloak-realm.labels" . | nindent 4 }}
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "keycloak-realm.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      restartPolicy: OnFailure
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "keycloak-realm.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          args:
+            - "bash"
+            - "-c"
+            - "raw=$(curl --verbose -XPOST \
+                --url {{ .Values.keycloak.endpoint }}/auth/realms/master/protocol/openid-connect/token \
+                --header 'content-type: application/x-www-form-urlencoded' \
+                --data client_id={{ .Values.keycloak.client_id }} \
+                --data grant_type={{ .Values.keycloak.grant_type }} \
+                --data username={{ .Values.keycloak.username }} \
+                --data password={{ .Values.keycloak.password }}) && \
+              token=$(jq -r  '.access_token' <<< \"${raw}\") && \
+              echo token:${token} && \
+              curl --verbose -XPOST {{ .Values.keycloak.endpoint }}/auth/admin/realms \
+                --header 'Content-Type: application/json' \
+                --header \"Authorization: Bearer ${token}\" \
+                --data-binary \"@/etc/realms/my-yoda/realm.json\""
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+          {{- range $realm := .Values.realms }}
+            - name: {{ $realm.name }}
+              mountPath: "/etc/realms/{{ $realm.name }}/realm.json"
+              subPath: "realm.json"
+              readOnly: true
+          {{- end }}
+          {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+      {{- range $realm := .Values.realms }}
+        - name: {{ $realm.name }}
+          secret:
+            secretName: {{ include "keycloak-realm.fullname" $root }}-{{ $realm.name }}
+            optional: false
+      {{- end }}
+      {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
