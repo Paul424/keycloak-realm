@@ -60,3 +60,13 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+
+{{- define "realm" }}
+  {{- if .realm -}}
+    {{- .realm | b64enc }}
+  {{- else if .realmb64enc -}}
+    {{- .realmb64enc }}
+  {{- end -}}
+{{- end }}
+

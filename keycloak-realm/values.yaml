@@ -173,9 +173,12 @@ keycloak:
   # password: 
 
 realms: []
+  # Feed in the realm (json) as b64 encoded string or plain (may cause validation errors)
   # - name: my-yoda
   #   realm: |
   #     {
   #       "id": "bbb21cb0-c7d2-49ff-9657-c403de1d6e8d",
   #       "realm": "me-foo"
   #       }
+  #   realmb64enc: ewogICJpZCI6ICJmMmY1YjhhMC0wYmY4LTQwMjEt...
+  
