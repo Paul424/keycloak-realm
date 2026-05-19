@@ -169,11 +169,13 @@ keycloak:
   endpoint: http://keycloak-keycloak-http.keycloak.svc.cluster.local
   client_id: admin-cli
   grant_type: password
-  username: ***
-  password: ***
+  # username: 
+  # password: 
 
 realms: []
   # - name: my-yoda
-  #   realm: {
-  #     "id": "bbb21cb0-c7d2-49ff-9657-c403de1d6e8d",
-  #     "realm": "me-foo",
+  #   realm: |
+  #     {
+  #       "id": "bbb21cb0-c7d2-49ff-9657-c403de1d6e8d",
+  #       "realm": "me-foo"
+  #       }
